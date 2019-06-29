@@ -20,6 +20,10 @@ Things to take into consideration when chosing a JS editor:
 * **VSCode**
 Create .editorconfig file and put it in the root of the project to maintain automated consistence among team members. More about .editorconfig on www.editorconfig.org.
 ## Module 4. Package Management
+Every popular language has its own package management nowadays.
+For security purpose install nsp: ```npm install -g nsp```
+Run ```nsp check``` to check for known vulnerability of your packages.
+**Note** nsp has been replaced by npm audit
 ## Module 5. Development Web Server
 ## Module 6. Automation
 ## Module 7. Transpilling
