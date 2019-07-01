@@ -25,6 +25,22 @@ For security purpose install nsp: ```npm install -g nsp```
 Run ```nsp check``` to check for known vulnerability of your packages.
 **Note** nsp has been replaced by npm audit
 ## Module 5. Development Web Server
+### Web servers
+* http-server
+* live-server
+* **Express**
+* budo
+* Webpack dev server
+* Browsersync
+For the purpose of this course we configure Express.
+### Sharing work-in-progress
+Browsersync is a handy way to share your work with your co-workers. But, it doesn't expose public IP to help test your work outside of your network. 
+The solutions below will help you quickly share/expose your work to the public web:
+* **Localtunnel**: easiest setup and ultraversatile
+* ngrok: easy setup and secure
+* Now: persistent host
+* Surge: host static files, persistent host
+Can be used for production: ngrok and Surge
 ## Module 6. Automation
 ## Module 7. Transpilling
 ## Module 8. Building
