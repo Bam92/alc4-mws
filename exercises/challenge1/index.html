@@ -35,11 +35,11 @@
         margin-left: calc(100% - 130px);
       }
 
-      .is-visa {
+      [data-credit-card].is-visa {
         background: linear-gradient(135deg, #622774 0%, #c53364 100%);
       }
 
-      .is-mastercard {
+      [data-credit-card].is-mastercard {
         background: linear-gradient(135deg, #65799b 0%, #5e2563 100%);
       }
 
@@ -203,13 +203,78 @@
         
       }
       
-      const detectCardType = ({target}) => target
+      const flagIfInvalid = (field,isValid) => {
+        if (isValid === true) field.classList.remove('is-invalid')
+        else field.classList.add('is-invalid')
+      }
       
-      const validateCardExpiryDate = ({target}) => target
+      const expiryDateFormatIsValid = (target) => {
+        return target.match(/^\d\d\/\d\d$/)?true:false
+      }
       
-      const validateCardHolderName = ({target}) => target
+      const detectCardType = ( { target } ) => {
+        const dcc = document.querySelector('[data-credit-card]')
+        const dct = document.querySelector('[data-card-type]')
+        
+        if (target.value.startsWith('4')) {
+          dcc.classList.add('is-visa')
+          dct.src = supportedCards.visa
+          
+          return 'is-visa'
+        }
+        else dcc.classList.remove('is-visa')
+        
+        if (target.value.startsWith('5')) {
+          dcc.classList.add('is-mastercard')
+          dct.src = supportedCards.mastercard
+          
+          return 'is-mastercard'
+        }
+        else dcc.classList.remove('is-mastercard')
+      }
       
-      const uiCanInteract = () => {}
+      const validateCardExpiryDate = ({target}) => {
+        const isValid = expiryDateFormatIsValid(target.value)
+        const currDate = new Date()
+        const splitDate = target.value.split('/')
+        const usrInput = new Date(20`${Number(splitDate[1])}`, Number(splitDate[0]))
+        const output = isValid && usrInput >= currDate
+        if (output) return output && flagIfInvalid(target, output)
+        
+        return flagIfInvalid(target, output) && output
+      }
+      
+      const validateCardHolderName = ({target}) => {
+        const [taget] = target.split(' ')
+        
+        if (target[0].length < 3 || target[1].length < 3) {
+          flagIfInvalid(target, false)
+          return false
+        }
+        else {
+          flagIfInvalid(target, true)
+          return true
+        }
+        
+      }
+      
+      const validateCardNumber = () => {
+        
+      }
+      
+      const uiCanInteract = () => {
+        let cardOne = document.querySelector('[data-cc-digits] input:nth-child(1)')
+        let cardHolder = document.querySelector('[data-cc-info] input:nth-child(1)')
+        let cardXpr = document.querySelector('[data-cc-info] input:nth-child(2)')
+        let btn = document.querySelector('button')
+        
+        cardOne.addEventListener('blur', detectCardType)
+        cardHolder.addEventListener('blur', validateCardHolderName)
+        cardXpr.addEventListener('blur', validateCardExpiryDate)
+        btn.addEventListener('click', validateCardNumber)
+        cardOne.focus()
+        
+      }
       
       const displayCartTotal = ({results}) => {
         const [data] = results
