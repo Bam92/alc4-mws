@@ -1,4 +1,4 @@
-# ALC 4.0: Phase 1 Challenge- Mobile Web
+# ALC 4.0: Phase 1 Challenge - Mobile Web
 
 ## Instruction:
 The start time is *8:30PM  WAT on Wednesday, July 10th, 2019 (today)* and the deadline for completion is *8AM WAT on Monday, May 15th, 2019 (next Monday).*
