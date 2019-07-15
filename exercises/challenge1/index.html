@@ -196,11 +196,22 @@
       const appState = {}
       
       const formatAsMoney = (amount, buyerCountry) => {
-        amount.toLocaleString(countries.currency)
-        buyerCountry.toLocaleString(countries.country)
-        
-        if (buyerCountry == 'undefined') buyerCountry == 'United States'
-        
+        countries.forEach(country => {
+          if (country.country === buyerCountry) {
+            amount.toLocaleString(country.code, {
+              style: 'currency',
+              currency: country.currency            
+          })
+          }
+          else {
+        amount.toLocaleString('US', {
+          style: 'currency',
+          currency: country.currency
+        })
+          }
+          
+        })
+
       }
       
       const flagIfInvalid = (field,isValid) => {
@@ -244,7 +255,7 @@
         return flagIfInvalid(target, output) && output
       }
       
-      const validateCardHolderName = ({target}) => {
+      const validateCardHolderName = ( { target } ) => {
         const [taget] = target.split(' ')
         
         if (target[0].length < 3 || target[1].length < 3) {
@@ -258,7 +269,35 @@
         
       }
       
+      const validateWithLuhn = (digits) => {
+        const revDig = digits.reverse().map(x => parseInt(x))
+        const getLastValue = revDig.splice(0,1)[0]
+        const sum = revDig.reduce((a,b,i) => (i%2!==0?a+b:a+((b*2)%9)||9),0)
+        sum += getLastValue
+        
+        return sum%10===0?true:false
+      }
+      
       const validateCardNumber = () => {
+        const digitsInputs = document.querySelectorAll('[data-cc-digits] input')
+        let digits = ''
+        
+        Array.prototype.forEach.call(digitsInputs, (item) => {digitsInputs += item.value})
+        
+        digits = digits.split('')
+        const checker = validateWithLuhn(digits)
+        const digitCont = document.querySelector('[data-cc-digits]')
+        
+        if (checker) {
+          flagIfInvalid(digitCont, true)
+          
+          return true
+        }
+        else {
+          flagIfInvalid(digitCont, false)
+          
+          return false
+        }
         
       }
       
@@ -276,16 +315,19 @@
         
       }
       
-      const displayCartTotal = ({results}) => {
-        const [data] = results
-        
-        const {itemsInCart, buyerCountry} = data
+      const displayCartTotal = ( { results } ) => {
+        const [data] = results        
+        const { itemsInCart, buyerCountry } = data
         
         appState.items = itemsInCart
         appState.country = buyerCountry
-        appState.bill = itemsInCart.reduce((total,item) => total+(item.price*item.qty))
-        appState.billFormated = formatAsMoney(appState.bill,appState.country)
-        document.querySelector('[data-bill]').textContent=appState.billFormated
+        
+        appState.bill = itemsInCart.reduce((total,item) => { return total + (item.price * item.qty)}, 0)
+        
+        appState.billFormatted = formatAsMoney(appState.bill,appState.country)
+        console.log('bill formated' ,appSate.billFormatted)
+        
+        document.querySelector('[data-bill]').textContent = appState.billFormatted
         
         uiCanInteract()
         
@@ -293,19 +335,15 @@
       
       const fetchBill = () => {
         const api = 'https://randomapi.com/api/006b08a801d82d0c9824dcfdfdfa3b3c'
-        
         fetch(api)
-        .then((response) => {
-          response.json()
-          return
-
-        }).then((data) => displayCartTotal(data))
-        .catch((err) => console.log('Fetch Error : -S', err))
+        .then(response => response.json())
+        .then(data => displayCartTotal(data))
+        .catch(err => console.log('Fetch Error : -S', err))
         
-      }
+        
+        console.log(displayCartTotal('our db' ,data))
+      }     
       
-      
-
       startApp();
       
     </script>
