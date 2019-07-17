@@ -196,23 +196,21 @@
       const appState = {}
       
       const formatAsMoney = (amount, buyerCountry) => {
-        countries.forEach(country => {
-          if (country.country === buyerCountry) {
-            amount.toLocaleString(country.code, {
-              style: 'currency',
-              currency: country.currency            
-          })
-          }
+        const country = countries.find(country => country.country === buyerCountry)
+        
+        if(country) {
+        return amount.toLocaleString('en-'+country.code, {
+          style:'currency',
+          currency:country.currency
+        })}
           else {
-        amount.toLocaleString('US', {
-          style: 'currency',
-          currency: country.currency
-        })
+            return amount.toLocaleString('en-US', {
+              style:'currency',
+              currency:'USD'
+            })
           }
-          
-        })
+        }
 
-      }
       
       const flagIfInvalid = (field,isValid) => {
         if (isValid === true) field.classList.remove('is-invalid')
@@ -220,7 +218,7 @@
       }
       
       const expiryDateFormatIsValid = (target) => {
-        return target.match(/^\d\d\/\d\d$/)?true:false
+        return target.match(/^\d\d\/\d\d$/) ? true : false
       }
       
       const detectCardType = ( { target } ) => {
@@ -244,73 +242,99 @@
         else dcc.classList.remove('is-mastercard')
       }
       
-      const validateCardExpiryDate = ({target}) => {
+      const validateCardExpiryDate = ( { target } ) => {
         const isValid = expiryDateFormatIsValid(target.value)
-        const currDate = new Date()
-        const splitDate = target.value.split('/')
-        const usrInput = new Date(20`${Number(splitDate[1])}`, Number(splitDate[0]))
-        const output = isValid && usrInput >= currDate
-        if (output) return output && flagIfInvalid(target, output)
         
-        return flagIfInvalid(target, output) && output
+        if(isValid) {
+          let dateArr = target.value.split('/')
+          const month = dateArr[0]
+          const year = '20' + dateArr[1]
+          const xpDate = new Date(year + '-' + month + '-01')
+          if(xpDate > new Date()) {
+            flagIfInvalid(target,true)
+            
+            return true
+          } else {
+            flagIfInvalid(target,false)
+            
+            return false
+          }
+        } else {
+          flagIfInvalid(target,false)
+          
+          return false
+        }
+       
       }
       
       const validateCardHolderName = ( { target } ) => {
-        const [taget] = target.split(' ')
         
-        if (target[0].length < 3 || target[1].length < 3) {
-          flagIfInvalid(target, false)
-          return false
-        }
-        else {
+        const nameRegex = /^([a-zA-Z]{3,})\s([a-zA-Z]{3,})$/
+        
+        if (nameRegex.test(target.value)) {
           flagIfInvalid(target, true)
           return true
         }
-        
-      }
-      
-      const validateWithLuhn = (digits) => {
-        const revDig = digits.reverse().map(x => parseInt(x))
-        const getLastValue = revDig.splice(0,1)[0]
-        const sum = revDig.reduce((a,b,i) => (i%2!==0?a+b:a+((b*2)%9)||9),0)
-        sum += getLastValue
-        
-        return sum%10===0?true:false
-      }
-      
-      const validateCardNumber = () => {
-        const digitsInputs = document.querySelectorAll('[data-cc-digits] input')
-        let digits = ''
-        
-        Array.prototype.forEach.call(digitsInputs, (item) => {digitsInputs += item.value})
-        
-        digits = digits.split('')
-        const checker = validateWithLuhn(digits)
-        const digitCont = document.querySelector('[data-cc-digits]')
-        
-        if (checker) {
-          flagIfInvalid(digitCont, true)
-          
-          return true
-        }
         else {
-          flagIfInvalid(digitCont, false)
-          
+          flagIfInvalid(target, false)
           return false
         }
         
+      }
+      
+      const validateWithLuhn = digits => {
+        
+        let hasInvalidChars = digits.some(digit => {
+          return (typeof digit !== 'number')
+        })
+        let hasValidChecksum = (digits => {
+          let checksum = digits.reverse().map((digit,index) => {
+            let computedDigit = digit;
+            
+            if((index + 1) % 2 === 0) {
+              computedDigit *= 2
+              if(computedDigit > 9) computedDigit -= 9
+            }
+            return computedDigit
+          }).reduce(((sum,digit) => {
+            return sum + digit
+          }), 0)
+          return ((checksum % 10) === 0)
+        })(digits)
+        return (digits.length === 16) && !hasInvalidChars && hasValidChecksum
+      }
+      
+      const validateCardNumber = digit => {
+        let digitsInputs = document.querySelectorAll('[data-cc-digits] input')
+        let values = ''
+       
+        digitsInputs.forEach(inputField => {
+          values += inputField.value
+        })
+        
+        const digits = values.split('').map(value => {
+          return parseInt(value)
+        })
+        
+        let isValidCardNumber = validateWithLuhn(digits)
+        
+        if(isValidCardNumber) document.querySelector('[data-cc-digits]').classList.remove('is-invalid')
+        else document.querySelector('[data-cc-digits]').classList.add('is-invalid')     
+        
+        return isValidCardNumber
       }
       
       const uiCanInteract = () => {
         let cardOne = document.querySelector('[data-cc-digits] input:nth-child(1)')
         let cardHolder = document.querySelector('[data-cc-info] input:nth-child(1)')
         let cardXpr = document.querySelector('[data-cc-info] input:nth-child(2)')
-        let btn = document.querySelector('button')
+        let btn = document.querySelector('[data-pay-btn]')
         
-        cardOne.addEventListener('blur', detectCardType)
-        cardHolder.addEventListener('blur', validateCardHolderName)
-        cardXpr.addEventListener('blur', validateCardExpiryDate)
-        btn.addEventListener('click', validateCardNumber)
+        cardOne.addEventListener('blur', (cardOne) => detectCardType(cardOne))
+        cardHolder.addEventListener('blur', () => { validateCardHolderName(cardHolder)})
+        cardXpr.addEventListener('blur', () => {validateCardExpiryDate(cardXpr)})
+        btn.addEventListener('click', () => validateCardNumber())
+        
         cardOne.focus()
         
       }
@@ -322,10 +346,11 @@
         appState.items = itemsInCart
         appState.country = buyerCountry
         
-        appState.bill = itemsInCart.reduce((total,item) => { return total + (item.price * item.qty)}, 0)
-        
+        appState.bill = itemsInCart.reduce((total, { price, qty}) => { 
+          return total + (price * qty)}, 0)
+        console.log('our bill is here' ,appState.bill)
         appState.billFormatted = formatAsMoney(appState.bill,appState.country)
-        console.log('bill formated' ,appSate.billFormatted)
+        console.log('bill formated' ,appState.billFormatted)
         
         document.querySelector('[data-bill]').textContent = appState.billFormatted
         
@@ -334,14 +359,18 @@
       }
       
       const fetchBill = () => {
-        const api = 'https://randomapi.com/api/006b08a801d82d0c9824dcfdfdfa3b3c'
+        const api = 'https://randomapi.com/api/006b08a801d82d0c9824dcfdfdfa3b3c';
         fetch(api)
-        .then(response => response.json())
-        .then(data => displayCartTotal(data))
-        .catch(err => console.log('Fetch Error : -S', err))
+          .then((response) => {
+          return response.json();
+        })
+          .then((data) => {
+            displayCartTotal(data);
+        })
+          .catch((err) => {
+            console.log('Fetch Error : -S', err)
+        });
         
-        
-        console.log(displayCartTotal('our db' ,data))
       }     
       
       startApp();
