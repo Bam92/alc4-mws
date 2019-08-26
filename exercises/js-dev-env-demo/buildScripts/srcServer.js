@@ -2,6 +2,7 @@ const express = require('express');
 const path = require('path');
 const open = require('open');
 
+/* eslint-disable no-console */
 const port = 3000;
 const app = express();
 
